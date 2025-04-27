@@ -29,6 +29,7 @@ class UserController extends Controller
         }
 
         $user = new User();
+        $user->uuid = (string) Str::uuid();
         $user->name = $request->name;
         $user->email = $request->email;
         $user->password = bcrypt($request->password);
@@ -39,9 +40,9 @@ class UserController extends Controller
         return new UserResource($user, 'Success', 'User created successfully');
     }
 
-    public function show($id)
+    public function show($uuid)
     {
-        $user = User::find($id);
+        $user = User::where('uuid', $uuid)->first();
         if ($user) {
             return new UserResource($user, 'Success', 'User found');
         } else {
@@ -49,9 +50,9 @@ class UserController extends Controller
         }
     }
 
-    public function update(Request $request, $id)
+    public function update(Request $request, $uuid)
     {
-        $user = User::find($id);
+        $user = User::where('uuid', $uuid)->first();
         if ($user) {
             $user->name = $request->name;
             $user->password = bcrypt($request->password);
@@ -63,9 +64,9 @@ class UserController extends Controller
         }
     }
 
-    public function destroy($id)
+    public function destroy($uuid)
     {
-        $user = User::find($id);
+        $user = User::where('uuid', $uuid);
         if ($user) {
             $user->delete();
             return new UserResource($user, 'Success', 'User deleted successfully');
