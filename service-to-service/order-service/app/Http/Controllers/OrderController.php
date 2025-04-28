@@ -32,9 +32,15 @@ class OrderController extends Controller
             return new OrderResource(null, 'Failed', $validator->errors());
         }
 
+        // Insert Data Order
         $data = $request->all();
         $data['uuid'] = (string) Str::uuid();
         $product = Order::create($data);
+
+        // TODO: Update Stock ke Product Service
+        Http::post('http://127.0.0.1:8002/api/products/'.$request->product_uuid.'/update-stock', [
+            'product_quantity' => $request->quantity,
+        ]);
 
         return new OrderResource($product, 'Success', 'Order created successfully');
     }
@@ -46,7 +52,9 @@ class OrderController extends Controller
             $data = $order->toArray();
 
             // Get the product details (consume)
-            $productResponse = Http::get('http://127.0.0.1:8002/api/products/'.$order->product_uuid);
+            $productResponse = Http::
+                timeout(5) // timeout
+                ->get('http://127.0.0.1:8002/api/products/'.$order->product_uuid);
             $data['product'] = $productResponse->json()['data'];
 
             // Get the user details (consume)
