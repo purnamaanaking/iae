@@ -18,7 +18,7 @@ class ProductFactory extends Factory
     {
         return [
             'code' => $this->faker->unique()->randomNumber(8),
-            'uuid' => $this->faker->uuid(),
+            'id' => $this->faker->uuid(),
             'name' => $this->faker->word(),
             'description' => $this->faker->sentence(),
             'price' => $this->faker->randomFloat(2, 1, 100),

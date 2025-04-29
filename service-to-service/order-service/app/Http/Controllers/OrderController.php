@@ -34,7 +34,6 @@ class OrderController extends Controller
 
         // 1. Insert Data Order
         $data = $request->all();
-        $data['uuid'] = (string) Str::uuid();
         $product = Order::create($data);
 
         // 2. Update Stock ke Product Service
@@ -47,7 +46,7 @@ class OrderController extends Controller
 
     public function show($uuid)
     {
-        $order = Order::where('uuid', $uuid)->first();
+        $order = Order::find($uuid);
         if ($order) {
             $data = $order->toArray();
 
@@ -65,9 +64,9 @@ class OrderController extends Controller
         }
     }
 
-    public function getByUser($uuid)
+    public function getByUser($user_uuid)
     {
-        $orders = Order::where('user_uuid', $uuid)->get();
+        $orders = Order::where('user_uuid', $user_uuid)->get();
         if ($orders) {
             foreach ($orders as $index => $order) {
                 // Get the product details (consume)

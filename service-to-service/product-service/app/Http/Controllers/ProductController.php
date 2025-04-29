@@ -31,7 +31,6 @@ class ProductController extends Controller
         }
 
         $data = $request->all();
-        $data['uuid'] = (string) Str::uuid();
         $product = Product::create($data);
 
         return new ProductResource($product, 'Success', 'Product created successfully');
@@ -39,7 +38,7 @@ class ProductController extends Controller
 
     public function show($uuid)
     {
-        $product = Product::where('uuid', $uuid)->first();
+        $product = Product::find($uuid);
         if ($product) {
             return new ProductResource($product, 'Success', 'Product found');
         } else {
@@ -49,10 +48,10 @@ class ProductController extends Controller
 
     public function update(Request $request, $uuid)
     {
-        $product = Product::where('uuid', $uuid)->first();
+        $product = Product::find($uuid);
         if ($product) {
             $data = $request->all();
-            $data['uuid'] = $uuid;
+            // $data['uuid'] = $uuid;
             $product->update($data);
 
             return new ProductResource($product, 'Success', 'Product updated successfully');
@@ -63,7 +62,7 @@ class ProductController extends Controller
 
     public function destroy($uuid)
     {
-        $product = Product::where('uuid', $uuid)->first();
+        $product = Product::find($uuid);
         if ($product) {
             $product->delete();
             return new ProductResource($product, 'Success', 'Product deleted successfully');
@@ -74,7 +73,7 @@ class ProductController extends Controller
 
     public function updateStock(Request $request, $uuid)
     {
-        $product = Product::where('uuid', $uuid)->first();
+        $product = Product::find($uuid);
         if ($product) {
             $productQuantity = $request->product_quantity;
             $updatedStock = $product->stock - $productQuantity;
