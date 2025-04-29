@@ -41,7 +41,7 @@ class ProductController extends Controller
     {
         $product = Product::where('uuid', $uuid)->first();
         if ($product) {
-            // sleep(2); // Delay
+            sleep(10); // Delay
             return new ProductResource($product, 'Success', 'Product found');
         } else {
             return new ProductResource(null, 'Failed', 'Product not found');
@@ -64,7 +64,7 @@ class ProductController extends Controller
 
     public function destroy($uuid)
     {
-        $product = Product::where('uuid', $uuid);
+        $product = Product::where('uuid', $uuid)->first();
         if ($product) {
             $product->delete();
             return new ProductResource($product, 'Success', 'Product deleted successfully');

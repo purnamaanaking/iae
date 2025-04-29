@@ -66,9 +66,10 @@ class UserController extends Controller
 
     public function destroy($uuid)
     {
-        $user = User::where('uuid', $uuid);
+        $user = User::where('uuid', $uuid)->first();
         if ($user) {
             $user->delete();
+
             return new UserResource($user, 'Success', 'User deleted successfully');
         } else {
             return new UserResource(null, 'Failed', 'User not found');
