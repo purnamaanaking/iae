@@ -38,7 +38,7 @@ class OrderController extends Controller
         $product = Order::create($data);
 
         // 2. Update Stock ke Product Service
-        Http::post('http://127.0.0.1:8002/api/products/'.$request->product_uuid.'/update-stock', [
+        Http::post('http://127.0.0.1:8001/api/products/'.$request->product_uuid.'/update-stock', [
             'product_quantity' => $request->quantity,
         ]);
 
@@ -52,16 +52,34 @@ class OrderController extends Controller
             $data = $order->toArray();
 
             // Get the product details (consume)
-            $productResponse = Http::
-                timeout(5) // timeout
-                ->get('http://127.0.0.1:8002/api/products/'.$order->product_uuid);
+            $productResponse = Http::get('http://127.0.0.1:8001/api/products/'.$order->product_uuid);
             $data['product'] = $productResponse->json()['data'];
 
             // Get the user details (consume)
-            $userResponse = Http::get('http://127.0.0.1:8003/api/users/'.$order->user_uuid);
+            $userResponse = Http::get('http://127.0.0.1:8000/api/users/'.$order->user_uuid);
             $data['user'] = $userResponse->json()['data'];
 
             return new OrderResource($data, 'Success', 'Order found');
+        } else {
+            return new OrderResource(null, 'Failed', 'Order not found');
+        }
+    }
+
+    public function getByUser($uuid)
+    {
+        $orders = Order::where('user_uuid', $uuid)->get();
+        if ($orders) {
+            foreach ($orders as $index => $order) {
+                // Get the product details (consume)
+                $productResponse = Http::get('http://127.0.0.1:8001/api/products/'.$order->product_uuid);
+                $orders[$index]['product'] = $productResponse->json()['data'];
+
+                // Get the user details (consume)
+                $userResponse = Http::get('http://127.0.0.1:8000/api/users/'.$order->user_uuid);
+                $orders[$index]['user'] = $userResponse->json()['data'];
+            }
+
+            return new OrderResource($orders, 'Success', 'Order found');
         } else {
             return new OrderResource(null, 'Failed', 'Order not found');
         }
