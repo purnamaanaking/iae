@@ -25,7 +25,7 @@ class Product extends Model
     }
 
     protected $fillable = [
-        'uuid',
+        'id',
         'code',
         'name',
         'description',

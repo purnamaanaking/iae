@@ -21,8 +21,8 @@ class OrderController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'code' => 'required',
-            'product_uuid' => 'required',
-            'user_uuid' => 'required',
+            'product_id' => 'required',
+            'user_id' => 'required',
             'status' => 'required',
             'total_price' => 'required',
             'quantity' => 'required',
@@ -37,25 +37,25 @@ class OrderController extends Controller
         $product = Order::create($data);
 
         // 2. Update Stock ke Product Service
-        Http::post('http://127.0.0.1:8001/api/products/'.$request->product_uuid.'/update-stock', [
+        Http::post('http://127.0.0.1:8001/api/products/'.$request->product_id.'/update-stock', [
             'product_quantity' => $request->quantity,
         ]);
 
         return new OrderResource($product, 'Success', 'Order created successfully');
     }
 
-    public function show($uuid)
+    public function show($id)
     {
-        $order = Order::find($uuid);
+        $order = Order::find($id);
         if ($order) {
             $data = $order->toArray();
 
             // Get the product details (consume)
-            $productResponse = Http::get('http://127.0.0.1:8001/api/products/'.$order->product_uuid);
+            $productResponse = Http::get('http://127.0.0.1:8001/api/products/'.$order->product_id);
             $data['product'] = $productResponse->json()['data'];
 
             // Get the user details (consume)
-            $userResponse = Http::get('http://127.0.0.1:8000/api/users/'.$order->user_uuid);
+            $userResponse = Http::get('http://127.0.0.1:8000/api/users/'.$order->user_id);
             $data['user'] = $userResponse->json()['data'];
 
             return new OrderResource($data, 'Success', 'Order found');
@@ -64,17 +64,17 @@ class OrderController extends Controller
         }
     }
 
-    public function getByUser($user_uuid)
+    public function getByUser($id)
     {
-        $orders = Order::where('user_uuid', $user_uuid)->get();
+        $orders = Order::where('user_id', $id)->get();
         if ($orders) {
             foreach ($orders as $index => $order) {
                 // Get the product details (consume)
-                $productResponse = Http::get('http://127.0.0.1:8001/api/products/'.$order->product_uuid);
+                $productResponse = Http::get('http://127.0.0.1:8001/api/products/'.$order->product_id);
                 $orders[$index]['product'] = $productResponse->json()['data'];
 
                 // Get the user details (consume)
-                $userResponse = Http::get('http://127.0.0.1:8000/api/users/'.$order->user_uuid);
+                $userResponse = Http::get('http://127.0.0.1:8000/api/users/'.$order->user_id);
                 $orders[$index]['user'] = $userResponse->json()['data'];
             }
 
