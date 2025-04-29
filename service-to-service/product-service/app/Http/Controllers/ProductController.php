@@ -41,7 +41,7 @@ class ProductController extends Controller
     {
         $product = Product::where('uuid', $uuid)->first();
         if ($product) {
-            sleep(10); // Delay
+            // sleep(2); // Delay
             return new ProductResource($product, 'Success', 'Product found');
         } else {
             return new ProductResource(null, 'Failed', 'Product not found');

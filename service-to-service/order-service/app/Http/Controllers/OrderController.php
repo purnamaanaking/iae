@@ -32,12 +32,12 @@ class OrderController extends Controller
             return new OrderResource(null, 'Failed', $validator->errors());
         }
 
-        // Insert Data Order
+        // 1. Insert Data Order
         $data = $request->all();
         $data['uuid'] = (string) Str::uuid();
         $product = Order::create($data);
 
-        // TODO: Update Stock ke Product Service
+        // 2. Update Stock ke Product Service
         Http::post('http://127.0.0.1:8002/api/products/'.$request->product_uuid.'/update-stock', [
             'product_quantity' => $request->quantity,
         ]);
