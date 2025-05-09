@@ -21,3 +21,15 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 
 Route::apiResource('/products', ProductController::class);
 Route::post('/products/{uuid}/update-stock', [ProductController::class, 'updateStock']);
+
+Route::get('/test', function () {
+    return response()->json([
+        'message' => 'Hello from Product Service',
+    ]);
+});
+
+Route::get('/try', function () {
+    return response()->json([
+        'message' => 'Hello from Product Service (Try)',
+    ]);
+});

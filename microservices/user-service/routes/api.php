@@ -20,3 +20,15 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 });
 
 Route::apiResource('/users', UserController::class);
+
+Route::get('/test', function () {
+    return response()->json([
+        'message' => 'Hello from User Service',
+    ]);
+});
+
+Route::get('/coba', function () {
+    return response()->json([
+        'message' => 'Hello from User Service (Coba)',
+    ]);
+});
