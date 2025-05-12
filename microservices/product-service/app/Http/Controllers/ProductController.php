@@ -51,7 +51,6 @@ class ProductController extends Controller
         $product = Product::find($id);
         if ($product) {
             $data = $request->all();
-            // $data['id'] = $id;
             $product->update($data);
 
             return new ProductResource($product, 'Success', 'Product updated successfully');
@@ -73,6 +72,7 @@ class ProductController extends Controller
 
     public function updateStock(Request $request, $id)
     {
+        sleep(5);
         $product = Product::find($id);
         if ($product) {
             $productQuantity = $request->product_quantity;
