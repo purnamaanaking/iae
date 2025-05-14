@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
+use App\Jobs\UpdateProductStock;
 
 class OrderController extends Controller
 {
@@ -44,15 +45,15 @@ class OrderController extends Controller
         ]);
 
         // 2. Update Stock ke Product Service (Synchronous)
-        Http::post('http://product-service-nginx/api/products/'.$request->product_id.'/update-stock', [
-            'product_quantity' => $request->quantity,
-        ]);
+        // Http::post('http://product-service-nginx/api/products/'.$request->product_id.'/update-stock', [
+        //     'product_quantity' => $request->quantity,
+        // ]);
 
         // OR
 
         // 2. Update Stock ke Product Service (Asynchronous with RabbitMQ)
-        // UpdateProductStock::dispatch($request->product_id, $request->quantity)
-        //     ->onQueue('product-stock-update');
+        UpdateProductStock::dispatch($request->product_id, $request->quantity)
+            ->onQueue('product-stock-update');
 
         return new OrderResource($product, 'Success', 'Order created successfully');
     }
@@ -83,11 +84,11 @@ class OrderController extends Controller
         if ($orders) {
             foreach ($orders as $index => $order) {
                 // Get the product details (consume)
-                $productResponse = Http::get('http://127.0.0.1:8001/api/products/'.$order->product_id);
+                $productResponse = Http::get('http://product-service-nginx/api/products/'.$order->product_id);
                 $orders[$index]['product'] = $productResponse->json()['data'];
 
                 // Get the user details (consume)
-                $userResponse = Http::get('http://127.0.0.1:8000/api/users/'.$order->user_id);
+                $userResponse = Http::get('http://user-service-nginx/api/users/'.$order->user_id);
                 $orders[$index]['user'] = $userResponse->json()['data'];
             }
 

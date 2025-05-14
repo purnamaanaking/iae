@@ -72,7 +72,7 @@ class ProductController extends Controller
 
     public function updateStock(Request $request, $id)
     {
-        sleep(5);
+        sleep(5); // Simulate a long-running process
         $product = Product::find($id);
         if ($product) {
             $productQuantity = $request->product_quantity;

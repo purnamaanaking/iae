@@ -1,9 +1,9 @@
-# Integrasi Aplikasi Enterprise
+# Enterprise Application Integration
 
-## Konten:
+## Contents:
 
-- Contoh penggunaan API Public pada sebuah project monolith.
-- Contoh RESTFul API sederhana menggunakan Laravel & MySQL.
-- Contoh komunikasi antar layanan secara langsung (service-to-service) dan asinkronus.
-- Contoh penerapan microservices dengan tools Docker, Laravel Queue, RabbitMQ, Kubernetes.
-- Contoh penerapan GraphQL dengan Hasura.
+- Example of using Public API in a monolith project.
+- Example of simple RESTFul API using Laravel & MySQL.
+- Example of direct communication between services (service-to-service) and synchronously.
+- Example of implementing microservices with Docker (multi-repo) and RabbitMQ for asynchronous communication.
+- Example of implementing GraphQL with Hasura.
