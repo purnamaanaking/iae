@@ -1,7 +1,7 @@
-# With lighthouse directive-based resolver #
-
+# Scalar Types
 scalar DateTime @scalar(class: "Nuwave\\Lighthouse\\Schema\\Types\\Scalars\\DateTime")
 
+# Types
 type Student {
   id: ID!
   nim: String!
@@ -13,11 +13,13 @@ type Student {
   updated_at: DateTime
 }
 
+# Query
 type Query {
   students: [Student!]! @field(resolver: "App\\GraphQL\\Queries\\StudentQueries@all")
   student(id: ID!): Student @field(resolver: "App\\GraphQL\\Queries\\StudentQueries@find")
 }
 
+# Input Object Type
 input CreateStudentInput {
   nim: String!
   name: String!
@@ -26,6 +28,7 @@ input CreateStudentInput {
   phone: String!
 }
 
+# Input Object Type
 input UpdateStudentInput {
   id: ID!
   nim: String
@@ -35,6 +38,7 @@ input UpdateStudentInput {
   phone: String
 }
 
+# Mutation and Resolver
 type Mutation {
   createStudent(input: CreateStudentInput!): Student @field(resolver: "App\\GraphQL\\Mutations\\StudentMutations@create")
   updateStudent(input: UpdateStudentInput!): Student @field(resolver: "App\\GraphQL\\Mutations\\StudentMutations@update")
