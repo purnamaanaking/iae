@@ -1,66 +1,442 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+# Product Service
 
-## About Laravel
+Service untuk manajemen data produk dalam arsitektur microservices. Dibangun menggunakan Laravel 10 dan berjalan di dalam container Docker. Service ini juga berperan sebagai **consumer** pesan dari RabbitMQ untuk memproses pembaruan stok produk secara asinkron.
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## Daftar Isi
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+- [Teknologi yang Digunakan](#teknologi-yang-digunakan)
+- [Struktur Container](#struktur-container)
+- [Konfigurasi Environment](#konfigurasi-environment)
+- [Struktur Database](#struktur-database)
+- [Queue Job — UpdateProductStock](#queue-job--updateproductstock)
+- [Endpoint API](#endpoint-api)
+- [Format Response](#format-response)
+- [Cara Menjalankan](#cara-menjalankan)
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+---
 
-## Learning Laravel
+## Teknologi yang Digunakan
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+| Teknologi | Fungsi |
+|-----------|--------|
+| **Laravel 10** | Framework utama |
+| **PHP 8.2-FPM** | Runtime PHP |
+| **MySQL 8** | Database |
+| **Nginx** | Web server / reverse proxy |
+| **RabbitMQ** | Message broker untuk menerima job asinkron |
+| **Laravel Sanctum** | API token authentication |
+| **Docker** | Kontainerisasi service |
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+**Dependency tambahan:**
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains over 2000 video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+| Package | Fungsi |
+|---------|--------|
+| `vladimir-yuldashev/laravel-queue-rabbitmq ^14.2` | Driver RabbitMQ untuk Laravel Queue |
+| `guzzlehttp/guzzle ^7.2` | HTTP client |
 
-## Laravel Sponsors
+---
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the Laravel [Patreon page](https://patreon.com/taylorotwell).
+## Struktur Container
 
-### Premium Partners
+Service ini terdiri dari 3 container Docker:
 
-- **[Vehikl](https://vehikl.com/)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Cubet Techno Labs](https://cubettech.com)**
-- **[Cyber-Duck](https://cyber-duck.co.uk)**
-- **[Many](https://www.many.co.uk)**
-- **[Webdock, Fast VPS Hosting](https://www.webdock.io/en)**
-- **[DevSquad](https://devsquad.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel/)**
-- **[OP.GG](https://op.gg)**
-- **[WebReinvent](https://webreinvent.com/?utm_source=laravel&utm_medium=github&utm_campaign=patreon-sponsors)**
-- **[Lendio](https://lendio.com)**
+| Nama Container | Image | Port | Fungsi |
+|----------------|-------|------|--------|
+| `product-service-app` | PHP 8.2-FPM (custom) | Internal | Menjalankan aplikasi Laravel + queue worker |
+| `product-service-nginx` | `nginx:stable-alpine` | `8001:80` | Web server / reverse proxy |
+| `product-service-db` | `mysql:8` | `3308:3306` | Database MySQL |
 
-## Contributing
+Semua container terhubung melalui network `laravel-net`.
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+---
 
-## Code of Conduct
+## Konfigurasi Environment
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+| Variabel | Nilai | Keterangan |
+|----------|-------|------------|
+| `APP_NAME` | `ProductService` | Nama aplikasi |
+| `APP_URL` | `http://localhost:8001` | URL aplikasi |
+| `DB_HOST` | `product_db` | Hostname database (nama service Docker) |
+| `DB_PORT` | `3306` | Port database |
+| `DB_DATABASE` | `product_service` | Nama database |
+| `DB_USERNAME` | `root` | Username database |
+| `DB_PASSWORD` | `secret` | Password database |
+| `QUEUE_CONNECTION` | `rabbitmq` | Menggunakan RabbitMQ sebagai driver antrian |
+| `RABBITMQ_HOST` | `rabbitmq` | Hostname RabbitMQ (nama container Docker) |
+| `RABBITMQ_PORT` | `5672` | Port AMQP RabbitMQ |
+| `RABBITMQ_USER` | `guest` | Username RabbitMQ |
+| `RABBITMQ_PASSWORD` | `guest` | Password RabbitMQ |
+| `RABBITMQ_QUEUE` | `product-stock-update` | Nama antrian yang didengarkan |
 
-## Security Vulnerabilities
+---
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+## Struktur Database
 
-## License
+### Tabel `products`
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+| Kolom | Tipe | Keterangan |
+|-------|------|------------|
+| `id` | VARCHAR(36) | Primary key (UUID, otomatis digenerate) |
+| `code` | VARCHAR(255) | Kode produk unik |
+| `name` | VARCHAR(255) | Nama produk |
+| `description` | VARCHAR(255) | Deskripsi produk (nullable) |
+| `price` | DECIMAL(10,2) | Harga produk |
+| `stock` | INT | Jumlah stok (default: 0) |
+| `created_at` | TIMESTAMP | Waktu dibuat |
+| `updated_at` | TIMESTAMP | Waktu diperbarui |
+
+### Tabel `failed_jobs`
+
+Tabel ini digunakan Laravel untuk mencatat job yang gagal diproses dari antrian.
+
+| Kolom | Tipe | Keterangan |
+|-------|------|------------|
+| `id` | BIGINT | Primary key |
+| `uuid` | VARCHAR | UUID job unik |
+| `connection` | TEXT | Nama koneksi antrian |
+| `queue` | TEXT | Nama antrian |
+| `payload` | LONGTEXT | Data job yang gagal |
+| `exception` | LONGTEXT | Pesan error |
+| `failed_at` | TIMESTAMP | Waktu job gagal |
+
+### Data Awal (Seeder)
+
+Saat migrasi dijalankan dengan `--seed`, akan dibuat **10 produk dummy** secara otomatis menggunakan factory dengan data acak:
+
+| Field | Data yang Digenerate |
+|-------|----------------------|
+| `code` | Angka acak 8 digit (unik) |
+| `name` | Kata acak |
+| `description` | Kalimat acak |
+| `price` | Angka desimal antara 1–100 |
+| `stock` | Angka bulat antara 0–100 |
+
+---
+
+## Queue Job — UpdateProductStock
+
+File: `app/Jobs/UpdateProductStock.php`
+
+Job ini adalah inti dari mekanisme komunikasi asinkron pada Product Service. Job dikirim oleh **Order Service** melalui RabbitMQ, kemudian diproses oleh queue worker yang berjalan di container `product-service-app`.
+
+**Alur kerja:**
+
+```
+Order Service → dispatch job → RabbitMQ Queue: "product-stock-update"
+                                          ↓
+                              Product Service Queue Worker
+                                          ↓
+                              Product::where('id', $productId)
+                                   ->decrement('stock', $quantity)
+```
+
+**Parameter job:**
+
+| Parameter | Tipe | Keterangan |
+|-----------|------|------------|
+| `$productId` | string | UUID produk yang stoknya akan dikurangi |
+| `$quantity` | int | Jumlah stok yang dikurangi |
+
+**Menjalankan queue worker secara manual:**
+
+```bash
+docker exec -it product-service-app php artisan queue:work
+```
+
+---
+
+## Endpoint API
+
+**Base URL:** `http://localhost:8001/api`
+
+| Method | Endpoint | Deskripsi | Auth |
+|--------|----------|-----------|------|
+| GET | `/products` | Ambil semua produk | Tidak |
+| POST | `/products` | Buat produk baru | Tidak |
+| GET | `/products/{id}` | Ambil produk berdasarkan ID | Tidak |
+| PUT | `/products/{id}` | Perbarui data produk | Tidak |
+| DELETE | `/products/{id}` | Hapus produk | Tidak |
+| POST | `/products/{uuid}/update-stock` | Perbarui stok produk (sinkron, blocking) | Tidak |
+| GET | `/user` | Ambil data pengguna yang sedang login | Ya (Sanctum) |
+
+---
+
+### GET /products
+
+Mengambil semua data produk.
+
+```bash
+curl -X GET http://localhost:8001/api/products
+```
+
+**Response:**
+```json
+{
+  "status": "Success",
+  "message": "List of products",
+  "data": [
+    {
+      "id": "550e8400-e29b-41d4-a716-446655440000",
+      "code": "12345678",
+      "name": "Laptop",
+      "description": "High performance laptop",
+      "price": "1500.00",
+      "stock": 10,
+      "created_at": "2025-04-27T10:00:00.000000Z",
+      "updated_at": "2025-04-27T10:00:00.000000Z"
+    }
+  ]
+}
+```
+
+---
+
+### POST /products
+
+Membuat produk baru.
+
+**Request Body:**
+
+| Field | Tipe | Wajib | Keterangan |
+|-------|------|-------|------------|
+| `code` | string | Ya | Kode produk unik |
+| `name` | string | Ya | Nama produk |
+| `description` | string | Ya | Deskripsi produk |
+| `price` | number | Ya | Harga produk |
+| `stock` | integer | Ya | Jumlah stok awal |
+
+```bash
+curl -X POST http://localhost:8001/api/products \
+  -H "Content-Type: application/json" \
+  -d '{
+    "code": "PROD-001",
+    "name": "Laptop",
+    "description": "High performance laptop",
+    "price": 1500.00,
+    "stock": 10
+  }'
+```
+
+**Response Berhasil:**
+```json
+{
+  "status": "Success",
+  "message": "Product created successfully",
+  "data": {
+    "id": "550e8400-e29b-41d4-a716-446655440000",
+    "code": "PROD-001",
+    "name": "Laptop",
+    "description": "High performance laptop",
+    "price": "1500.00",
+    "stock": 10,
+    "created_at": "2025-04-27T10:00:00.000000Z",
+    "updated_at": "2025-04-27T10:00:00.000000Z"
+  }
+}
+```
+
+**Response Gagal (Validasi):**
+```json
+{
+  "status": "Failed",
+  "message": {
+    "code": ["The code field is required."],
+    "name": ["The name field is required."]
+  },
+  "data": null
+}
+```
+
+---
+
+### GET /products/{id}
+
+Mengambil data produk berdasarkan UUID.
+
+```bash
+curl -X GET http://localhost:8001/api/products/550e8400-e29b-41d4-a716-446655440000
+```
+
+**Response Berhasil:**
+```json
+{
+  "status": "Success",
+  "message": "Product found",
+  "data": {
+    "id": "550e8400-e29b-41d4-a716-446655440000",
+    "code": "PROD-001",
+    "name": "Laptop",
+    "description": "High performance laptop",
+    "price": "1500.00",
+    "stock": 10,
+    "created_at": "2025-04-27T10:00:00.000000Z",
+    "updated_at": "2025-04-27T10:00:00.000000Z"
+  }
+}
+```
+
+**Response Gagal:**
+```json
+{
+  "status": "Failed",
+  "message": "Product not found",
+  "data": null
+}
+```
+
+---
+
+### PUT /products/{id}
+
+Memperbarui data produk berdasarkan UUID.
+
+**Request Body:**
+
+| Field | Tipe | Wajib | Keterangan |
+|-------|------|-------|------------|
+| `code` | string | Tidak | Kode produk |
+| `name` | string | Tidak | Nama produk |
+| `description` | string | Tidak | Deskripsi produk |
+| `price` | number | Tidak | Harga produk |
+| `stock` | integer | Tidak | Jumlah stok |
+
+```bash
+curl -X PUT http://localhost:8001/api/products/550e8400-e29b-41d4-a716-446655440000 \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Laptop Pro",
+    "price": 2000.00,
+    "stock": 5
+  }'
+```
+
+**Response Berhasil:**
+```json
+{
+  "status": "Success",
+  "message": "Product updated successfully",
+  "data": {
+    "id": "550e8400-e29b-41d4-a716-446655440000",
+    "code": "PROD-001",
+    "name": "Laptop Pro",
+    "description": "High performance laptop",
+    "price": "2000.00",
+    "stock": 5,
+    "created_at": "2025-04-27T10:00:00.000000Z",
+    "updated_at": "2025-04-27T10:30:00.000000Z"
+  }
+}
+```
+
+---
+
+### DELETE /products/{id}
+
+Menghapus produk berdasarkan UUID.
+
+```bash
+curl -X DELETE http://localhost:8001/api/products/550e8400-e29b-41d4-a716-446655440000
+```
+
+**Response Berhasil:**
+```json
+{
+  "status": "Success",
+  "message": "Product deleted successfully",
+  "data": {
+    "id": "550e8400-e29b-41d4-a716-446655440000",
+    "code": "PROD-001",
+    "name": "Laptop"
+  }
+}
+```
+
+---
+
+### POST /products/{uuid}/update-stock
+
+Memperbarui stok produk secara **sinkron** (blocking). Endpoint ini mensimulasikan proses yang lama dengan menunggu selama 5 detik sebelum merespons. Tujuannya adalah untuk membandingkan dengan pendekatan asinkron melalui RabbitMQ.
+
+**Request Body:**
+
+| Field | Tipe | Wajib | Keterangan |
+|-------|------|-------|------------|
+| `product_quantity` | integer | Ya | Jumlah stok yang dikurangi |
+
+```bash
+curl -X POST http://localhost:8001/api/products/550e8400-e29b-41d4-a716-446655440000/update-stock \
+  -H "Content-Type: application/json" \
+  -d '{
+    "product_quantity": 2
+  }'
+```
+
+**Response Berhasil** *(setelah menunggu 5 detik)*:
+```json
+{
+  "status": "Success",
+  "message": "Product stock updated successfully",
+  "data": {
+    "id": "550e8400-e29b-41d4-a716-446655440000",
+    "code": "PROD-001",
+    "name": "Laptop",
+    "price": "1500.00",
+    "stock": 8,
+    "created_at": "2025-04-27T10:00:00.000000Z",
+    "updated_at": "2025-04-27T10:30:00.000000Z"
+  }
+}
+```
+
+> **Catatan:** Endpoint ini sengaja dibuat lambat (blocking 5 detik) untuk menunjukkan kelemahan pendekatan sinkron. Bandingkan dengan pembaruan stok asinkron yang dilakukan melalui RabbitMQ oleh Order Service — respons langsung diberikan tanpa menunggu proses selesai.
+
+---
+
+## Format Response
+
+Semua endpoint menggunakan format response yang konsisten:
+
+```json
+{
+  "status": "Success | Failed",
+  "message": "Pesan deskriptif",
+  "data": {} | [] | null
+}
+```
+
+---
+
+## Cara Menjalankan
+
+### Menjalankan hanya Product Service
+
+```bash
+docker-compose up -d --build
+```
+
+Kemudian jalankan migrasi dan seeder:
+
+```bash
+docker exec -it product-service-app php artisan migrate:refresh --seed
+```
+
+Kemudian jalankan queue worker untuk mulai mendengarkan antrian RabbitMQ:
+
+```bash
+docker exec -d product-service-app php artisan queue:work
+```
+
+### Menjalankan bersama semua service
+
+Gunakan skrip dari folder `async-docker/`:
+
+```bash
+./start-all.sh
+```
+
+### Menghentikan dan menghapus container
+
+```bash
+docker-compose down --rmi all -v
+```
