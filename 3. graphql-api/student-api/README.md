@@ -1,66 +1,338 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+# Student API — GraphQL Monolitik
 
-## About Laravel
+Contoh implementasi **GraphQL API** menggunakan arsitektur **monolitik** dengan Laravel 10, Lighthouse, dan MySQL. Berbeda dengan REST API yang memiliki banyak endpoint, GraphQL menggunakan **satu endpoint tunggal** (`/graphql`) dengan query yang fleksibel — klien menentukan sendiri data apa yang ingin diambil.
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## Daftar Isi
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+- [Perbedaan GraphQL vs REST API](#perbedaan-graphql-vs-rest-api)
+- [Teknologi yang Digunakan](#teknologi-yang-digunakan)
+- [Konfigurasi Environment](#konfigurasi-environment)
+- [Struktur Database](#struktur-database)
+- [GraphQL Schema](#graphql-schema)
+- [Operasi GraphQL](#operasi-graphql)
+- [Cara Menjalankan](#cara-menjalankan)
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+---
 
-## Learning Laravel
+## Perbedaan GraphQL vs REST API
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+| Aspek | REST API | GraphQL |
+|-------|----------|---------|
+| **Endpoint** | Banyak (`/students`, `/students/{id}`, dll.) | Satu (`/graphql`) |
+| **Pengambilan Data** | Server menentukan data yang dikembalikan | Klien menentukan field yang dibutuhkan |
+| **Over-fetching** | Sering terjadi (data berlebih) | Tidak terjadi |
+| **Under-fetching** | Sering terjadi (butuh banyak request) | Tidak terjadi |
+| **Operasi** | HTTP Method (GET, POST, PUT, DELETE) | Query & Mutation |
+| **Dokumentasi** | Manual / Swagger | Otomatis via Introspection |
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+---
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains over 2000 video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+## Teknologi yang Digunakan
 
-## Laravel Sponsors
+| Teknologi | Fungsi |
+|-----------|--------|
+| **Laravel 10** | Framework utama |
+| **PHP 8.1+** | Runtime PHP |
+| **MySQL** | Database |
+| **Lighthouse** | Library GraphQL untuk Laravel |
+| **Laravel Sanctum** | API token authentication |
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the Laravel [Patreon page](https://patreon.com/taylorotwell).
+**Dependency:**
 
-### Premium Partners
+| Package | Fungsi |
+|---------|--------|
+| `nuwave/lighthouse ^6.57` | GraphQL server untuk Laravel |
+| `laravel/framework ^10.0` | Core Laravel framework |
+| `laravel/sanctum ^3.2` | API token authentication |
+| `guzzlehttp/guzzle ^7.2` | HTTP client |
 
-- **[Vehikl](https://vehikl.com/)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Cubet Techno Labs](https://cubettech.com)**
-- **[Cyber-Duck](https://cyber-duck.co.uk)**
-- **[Many](https://www.many.co.uk)**
-- **[Webdock, Fast VPS Hosting](https://www.webdock.io/en)**
-- **[DevSquad](https://devsquad.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel/)**
-- **[OP.GG](https://op.gg)**
-- **[WebReinvent](https://webreinvent.com/?utm_source=laravel&utm_medium=github&utm_campaign=patreon-sponsors)**
-- **[Lendio](https://lendio.com)**
+---
 
-## Contributing
+## Konfigurasi Environment
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+| Variabel | Nilai | Keterangan |
+|----------|-------|------------|
+| `APP_URL` | `http://localhost` | URL aplikasi |
+| `DB_HOST` | `127.0.0.1` | Host database lokal |
+| `DB_PORT` | `3306` | Port MySQL |
+| `DB_DATABASE` | `student-gql-api` | Nama database |
+| `DB_USERNAME` | `root` | Username database |
+| `DB_PASSWORD` | `root` | Password database |
+| `QUEUE_CONNECTION` | `sync` | Tidak menggunakan antrian |
 
-## Code of Conduct
+---
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+## Struktur Database
 
-## Security Vulnerabilities
+### Tabel `students`
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+| Kolom | Tipe | Keterangan |
+|-------|------|------------|
+| `id` | BIGINT | Primary key (auto-increment) |
+| `nim` | VARCHAR(255) | Nomor Induk Mahasiswa |
+| `name` | VARCHAR(255) | Nama mahasiswa |
+| `email` | VARCHAR(255) | Email mahasiswa |
+| `address` | VARCHAR(255) | Alamat mahasiswa |
+| `phone` | VARCHAR(255) | Nomor telepon mahasiswa |
+| `created_at` | TIMESTAMP | Waktu dibuat |
+| `updated_at` | TIMESTAMP | Waktu diperbarui |
 
-## License
+### Data Awal (Seeder)
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+Saat migrasi dijalankan dengan `--seed`, akan dibuat **10 mahasiswa dummy** secara otomatis menggunakan factory dengan data acak (nim, name, email, address, phone).
+
+---
+
+## GraphQL Schema
+
+File schema berada di `graphql/schema.graphql`. Schema mendefinisikan struktur data, query, dan mutation yang tersedia.
+
+```graphql
+type Student {
+  id: ID!
+  nim: String!
+  name: String!
+  email: String!
+  address: String!
+  phone: String!
+  created_at: DateTime
+  updated_at: DateTime
+}
+
+type Query {
+  students: [Student!]!
+  student(id: ID!): Student
+}
+
+input CreateStudentInput {
+  nim: String!
+  name: String!
+  email: String!
+  address: String!
+  phone: String!
+}
+
+input UpdateStudentInput {
+  id: ID!
+  nim: String
+  name: String
+  email: String
+  address: String
+  phone: String
+}
+
+type Mutation {
+  createStudent(input: CreateStudentInput!): Student
+  updateStudent(input: UpdateStudentInput!): Student
+  deleteStudent(id: ID!): Student
+}
+```
+
+---
+
+## Operasi GraphQL
+
+**Endpoint:** `POST http://127.0.0.1:8000/graphql`
+
+Semua operasi dikirim ke satu endpoint yang sama menggunakan method `POST` dengan body berisi query atau mutation GraphQL.
+
+---
+
+### Query — Ambil Semua Mahasiswa
+
+```bash
+curl -X POST http://127.0.0.1:8000/graphql \
+  -H "Content-Type: application/json" \
+  -d '{
+    "query": "{ students { id nim name email address phone } }"
+  }'
+```
+
+**Response:**
+```json
+{
+  "data": {
+    "students": [
+      {
+        "id": "1",
+        "nim": "12345678",
+        "name": "John Doe",
+        "email": "john@example.com",
+        "address": "Jl. Contoh No. 1, Jakarta",
+        "phone": "081234567890"
+      }
+    ]
+  }
+}
+```
+
+> **Catatan:** Klien bebas menentukan field mana yang ingin diambil. Misalnya jika hanya butuh `id` dan `name`, cukup tulis `{ students { id name } }`.
+
+---
+
+### Query — Ambil Mahasiswa Berdasarkan ID
+
+```bash
+curl -X POST http://127.0.0.1:8000/graphql \
+  -H "Content-Type: application/json" \
+  -d '{
+    "query": "{ student(id: 1) { id nim name email address phone } }"
+  }'
+```
+
+**Response:**
+```json
+{
+  "data": {
+    "student": {
+      "id": "1",
+      "nim": "12345678",
+      "name": "John Doe",
+      "email": "john@example.com",
+      "address": "Jl. Contoh No. 1, Jakarta",
+      "phone": "081234567890"
+    }
+  }
+}
+```
+
+**Response jika tidak ditemukan:**
+```json
+{
+  "data": {
+    "student": null
+  }
+}
+```
+
+---
+
+### Mutation — Tambah Mahasiswa Baru
+
+```bash
+curl -X POST http://127.0.0.1:8000/graphql \
+  -H "Content-Type: application/json" \
+  -d '{
+    "query": "mutation { createStudent(input: { nim: \"12345678\", name: \"John Doe\", email: \"john@example.com\", address: \"Jl. Contoh No. 1\", phone: \"081234567890\" }) { id nim name email address phone } }"
+  }'
+```
+
+Atau menggunakan **variabel GraphQL** (cara yang lebih bersih):
+
+```bash
+curl -X POST http://127.0.0.1:8000/graphql \
+  -H "Content-Type: application/json" \
+  -d '{
+    "query": "mutation CreateStudent($input: CreateStudentInput!) { createStudent(input: $input) { id nim name email address phone } }",
+    "variables": {
+      "input": {
+        "nim": "12345678",
+        "name": "John Doe",
+        "email": "john@example.com",
+        "address": "Jl. Contoh No. 1, Jakarta",
+        "phone": "081234567890"
+      }
+    }
+  }'
+```
+
+**Response:**
+```json
+{
+  "data": {
+    "createStudent": {
+      "id": "1",
+      "nim": "12345678",
+      "name": "John Doe",
+      "email": "john@example.com",
+      "address": "Jl. Contoh No. 1, Jakarta",
+      "phone": "081234567890"
+    }
+  }
+}
+```
+
+---
+
+### Mutation — Perbarui Data Mahasiswa
+
+```bash
+curl -X POST http://127.0.0.1:8000/graphql \
+  -H "Content-Type: application/json" \
+  -d '{
+    "query": "mutation UpdateStudent($input: UpdateStudentInput!) { updateStudent(input: $input) { id nim name email address phone } }",
+    "variables": {
+      "input": {
+        "id": "1",
+        "name": "John Updated",
+        "address": "Jl. Baru No. 2, Bandung"
+      }
+    }
+  }'
+```
+
+**Response:**
+```json
+{
+  "data": {
+    "updateStudent": {
+      "id": "1",
+      "nim": "12345678",
+      "name": "John Updated",
+      "email": "john@example.com",
+      "address": "Jl. Baru No. 2, Bandung",
+      "phone": "081234567890"
+    }
+  }
+}
+```
+
+---
+
+### Mutation — Hapus Mahasiswa
+
+```bash
+curl -X POST http://127.0.0.1:8000/graphql \
+  -H "Content-Type: application/json" \
+  -d '{
+    "query": "mutation { deleteStudent(id: 1) { id nim name } }"
+  }'
+```
+
+**Response:**
+```json
+{
+  "data": {
+    "deleteStudent": {
+      "id": "1",
+      "nim": "12345678",
+      "name": "John Doe"
+    }
+  }
+}
+```
+
+---
+
+## Cara Menjalankan
+
+**1. Install dependency**
+
+```bash
+composer install
+```
+
+**2. Jalankan migrasi dan seeder**
+
+```bash
+php artisan migrate:refresh --seed
+```
+
+**3. Jalankan server**
+
+```bash
+php artisan serve
+```
+
+API GraphQL akan berjalan di `http://127.0.0.1:8000/graphql` dan siap menerima request.

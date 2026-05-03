@@ -1,66 +1,343 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+# User Service
 
-## About Laravel
+Service untuk manajemen data pengguna dalam arsitektur microservices dengan komunikasi **sinkron**. Dibangun menggunakan Laravel 10 dan dijalankan langsung di mesin lokal tanpa Docker. Service ini berdiri sendiri dan tidak melakukan panggilan ke service lain — hanya menyediakan data pengguna yang dikonsumsi oleh Order Service.
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## Daftar Isi
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+- [Teknologi yang Digunakan](#teknologi-yang-digunakan)
+- [Konfigurasi Environment](#konfigurasi-environment)
+- [Struktur Database](#struktur-database)
+- [Endpoint API](#endpoint-api)
+- [Format Response](#format-response)
+- [Cara Menjalankan](#cara-menjalankan)
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+---
 
-## Learning Laravel
+## Teknologi yang Digunakan
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+| Teknologi | Fungsi |
+|-----------|--------|
+| **Laravel 10** | Framework utama |
+| **PHP 8.1+** | Runtime PHP |
+| **MySQL** | Database lokal |
+| **Laravel Sanctum** | API token authentication |
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+**Dependency:**
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains over 2000 video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+| Package | Fungsi |
+|---------|--------|
+| `laravel/framework ^10.0` | Core Laravel framework |
+| `laravel/sanctum ^3.2` | API token authentication |
+| `guzzlehttp/guzzle ^7.2` | HTTP client |
 
-## Laravel Sponsors
+> Service ini **tidak melakukan panggilan ke service lain**. Hanya menyediakan endpoint yang dikonsumsi oleh Order Service saat mengambil detail pengguna.
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the Laravel [Patreon page](https://patreon.com/taylorotwell).
+---
 
-### Premium Partners
+## Konfigurasi Environment
 
-- **[Vehikl](https://vehikl.com/)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Cubet Techno Labs](https://cubettech.com)**
-- **[Cyber-Duck](https://cyber-duck.co.uk)**
-- **[Many](https://www.many.co.uk)**
-- **[Webdock, Fast VPS Hosting](https://www.webdock.io/en)**
-- **[DevSquad](https://devsquad.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel/)**
-- **[OP.GG](https://op.gg)**
-- **[WebReinvent](https://webreinvent.com/?utm_source=laravel&utm_medium=github&utm_campaign=patreon-sponsors)**
-- **[Lendio](https://lendio.com)**
+| Variabel | Nilai | Keterangan |
+|----------|-------|------------|
+| `APP_URL` | `http://localhost` | URL aplikasi |
+| `DB_HOST` | `127.0.0.1` | Host database lokal |
+| `DB_PORT` | `3306` | Port MySQL |
+| `DB_DATABASE` | `user-service` | Nama database |
+| `DB_USERNAME` | `root` | Username database |
+| `DB_PASSWORD` | `root` | Password database |
+| `QUEUE_CONNECTION` | `sync` | Tidak menggunakan antrian |
 
-## Contributing
+---
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+## Struktur Database
 
-## Code of Conduct
+### Tabel `users`
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+| Kolom | Tipe | Keterangan |
+|-------|------|------------|
+| `id` | VARCHAR(36) | Primary key (UUID, otomatis digenerate) |
+| `name` | VARCHAR(255) | Nama pengguna |
+| `email` | VARCHAR(255) | Email unik |
+| `email_verified_at` | TIMESTAMP | Waktu verifikasi email (nullable) |
+| `password` | VARCHAR(255) | Password (di-hash dengan bcrypt, disembunyikan dari response) |
+| `remember_token` | VARCHAR(100) | Token remember me (disembunyikan dari response) |
+| `created_at` | TIMESTAMP | Waktu dibuat |
+| `updated_at` | TIMESTAMP | Waktu diperbarui |
 
-## Security Vulnerabilities
+### Tabel `personal_access_tokens` (Laravel Sanctum)
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+| Kolom | Tipe | Keterangan |
+|-------|------|------------|
+| `id` | BIGINT | Primary key |
+| `tokenable_type` | VARCHAR | Tipe model pemilik token |
+| `tokenable_id` | BIGINT | ID pemilik token |
+| `name` | VARCHAR | Nama token |
+| `token` | VARCHAR(64) | Token unik |
+| `abilities` | TEXT | Hak akses token (nullable) |
+| `last_used_at` | TIMESTAMP | Terakhir digunakan (nullable) |
+| `expires_at` | TIMESTAMP | Waktu kedaluwarsa (nullable) |
 
-## License
+### Data Awal (Seeder)
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+Saat migrasi dijalankan dengan `--seed`, akan dibuat data pengguna awal sebagai berikut:
+
+| Jenis | Jumlah | Keterangan |
+|-------|--------|------------|
+| Pengguna acak | 10 | Digenerate menggunakan factory dengan data acak |
+| Pengguna khusus | 1 | Nama: `Purnama Anaking`, Email: `purnama.anaking@gmail.com` |
+
+> Password default untuk semua pengguna seeder adalah `password`.
+
+---
+
+## Endpoint API
+
+**Base URL:** `http://127.0.0.1:8000/api`
+
+| Method | Endpoint | Deskripsi | Auth |
+|--------|----------|-----------|------|
+| GET | `/users` | Ambil semua pengguna | Tidak |
+| POST | `/users` | Buat pengguna baru | Tidak |
+| GET | `/users/{id}` | Ambil pengguna berdasarkan ID | Tidak |
+| PUT | `/users/{id}` | Perbarui data pengguna | Tidak |
+| DELETE | `/users/{id}` | Hapus pengguna | Tidak |
+| GET | `/user` | Ambil data pengguna yang sedang login | Ya (Sanctum) |
+
+---
+
+### GET /users
+
+Mengambil semua data pengguna.
+
+```bash
+curl -X GET http://127.0.0.1:8000/api/users
+```
+
+**Response:**
+```json
+{
+  "status": "Success",
+  "message": "List of Users",
+  "data": [
+    {
+      "id": "550e8400-e29b-41d4-a716-446655440000",
+      "name": "John Doe",
+      "email": "john@example.com",
+      "email_verified_at": "2025-04-27T10:00:00.000000Z",
+      "created_at": "2025-04-27T10:00:00.000000Z",
+      "updated_at": "2025-04-27T10:00:00.000000Z"
+    }
+  ]
+}
+```
+
+---
+
+### POST /users
+
+Membuat pengguna baru. Password akan di-hash otomatis menggunakan bcrypt.
+
+**Request Body:**
+
+| Field | Tipe | Wajib | Keterangan |
+|-------|------|-------|------------|
+| `name` | string | Ya | Nama pengguna |
+| `email` | string | Ya | Email pengguna |
+| `password` | string | Ya | Password (akan di-hash otomatis) |
+
+```bash
+curl -X POST http://127.0.0.1:8000/api/users \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "John Doe",
+    "email": "john@example.com",
+    "password": "password123"
+  }'
+```
+
+**Response Berhasil:**
+```json
+{
+  "status": "Success",
+  "message": "User created successfully",
+  "data": {
+    "id": "550e8400-e29b-41d4-a716-446655440000",
+    "name": "John Doe",
+    "email": "john@example.com",
+    "email_verified_at": "2025-04-27T10:00:00.000000Z",
+    "created_at": "2025-04-27T10:00:00.000000Z",
+    "updated_at": "2025-04-27T10:00:00.000000Z"
+  }
+}
+```
+
+**Response Gagal (Validasi):**
+```json
+{
+  "status": "Failed",
+  "message": {
+    "name": ["The name field is required."],
+    "email": ["The email field is required."],
+    "password": ["The password field is required."]
+  },
+  "data": null
+}
+```
+
+---
+
+### GET /users/{id}
+
+Mengambil data pengguna berdasarkan UUID.
+
+```bash
+curl -X GET http://127.0.0.1:8000/api/users/550e8400-e29b-41d4-a716-446655440000
+```
+
+**Response Berhasil:**
+```json
+{
+  "status": "Success",
+  "message": "User found",
+  "data": {
+    "id": "550e8400-e29b-41d4-a716-446655440000",
+    "name": "John Doe",
+    "email": "john@example.com",
+    "email_verified_at": "2025-04-27T10:00:00.000000Z",
+    "created_at": "2025-04-27T10:00:00.000000Z",
+    "updated_at": "2025-04-27T10:00:00.000000Z"
+  }
+}
+```
+
+**Response Gagal:**
+```json
+{
+  "status": "Failed",
+  "message": "User not found",
+  "data": null
+}
+```
+
+---
+
+### PUT /users/{id}
+
+Memperbarui data pengguna berdasarkan UUID. Hanya `name` dan `password` yang dapat diperbarui.
+
+**Request Body:**
+
+| Field | Tipe | Wajib | Keterangan |
+|-------|------|-------|------------|
+| `name` | string | Tidak | Nama baru pengguna |
+| `password` | string | Tidak | Password baru (akan di-hash otomatis) |
+
+```bash
+curl -X PUT http://127.0.0.1:8000/api/users/550e8400-e29b-41d4-a716-446655440000 \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "John Updated",
+    "password": "newpassword123"
+  }'
+```
+
+**Response Berhasil:**
+```json
+{
+  "status": "Success",
+  "message": "User updated successfully",
+  "data": {
+    "id": "550e8400-e29b-41d4-a716-446655440000",
+    "name": "John Updated",
+    "email": "john@example.com",
+    "email_verified_at": "2025-04-27T10:00:00.000000Z",
+    "created_at": "2025-04-27T10:00:00.000000Z",
+    "updated_at": "2025-04-27T10:30:00.000000Z"
+  }
+}
+```
+
+**Response Gagal:**
+```json
+{
+  "status": "Failed",
+  "message": "User not found",
+  "data": null
+}
+```
+
+---
+
+### DELETE /users/{id}
+
+Menghapus pengguna berdasarkan UUID.
+
+```bash
+curl -X DELETE http://127.0.0.1:8000/api/users/550e8400-e29b-41d4-a716-446655440000
+```
+
+**Response Berhasil:**
+```json
+{
+  "status": "Success",
+  "message": "User deleted successfully",
+  "data": {
+    "id": "550e8400-e29b-41d4-a716-446655440000",
+    "name": "John Doe",
+    "email": "john@example.com"
+  }
+}
+```
+
+**Response Gagal:**
+```json
+{
+  "status": "Failed",
+  "message": "User not found",
+  "data": null
+}
+```
+
+---
+
+## Format Response
+
+Semua endpoint menggunakan format response yang konsisten:
+
+```json
+{
+  "status": "Success | Failed",
+  "message": "Pesan deskriptif",
+  "data": {} | [] | null
+}
+```
+
+> `password` dan `remember_token` selalu disembunyikan dari semua response API.
+
+---
+
+## Cara Menjalankan
+
+Service ini dijalankan langsung menggunakan `php artisan serve` tanpa Docker.
+
+### Langkah-langkah
+
+**1. Install dependency**
+
+```bash
+composer install
+```
+
+**2. Jalankan migrasi dan seeder**
+
+```bash
+php artisan migrate:refresh --seed
+```
+
+**3. Jalankan server**
+
+```bash
+php artisan serve --port=8000
+```
+
+Service akan berjalan di `http://127.0.0.1:8000` dan siap dikonsumsi oleh Order Service maupun klien langsung.
