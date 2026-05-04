@@ -4,6 +4,7 @@ services:
     container_name: product-service-app
     volumes:
       - ../product-service:/var/www
+      - product_vendor:/var/www/vendor
     networks:
       - laravel-net
     depends_on:
@@ -17,6 +18,7 @@ services:
       - "8001:80"
     volumes:
       - ../product-service:/var/www
+      - product_vendor:/var/www/vendor
       - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
     networks:
       - laravel-net
@@ -47,3 +49,4 @@ networks:
 
 volumes:
   product_db_data:
+  product_vendor:
