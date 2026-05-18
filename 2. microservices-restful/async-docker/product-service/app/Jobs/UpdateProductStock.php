@@ -30,6 +30,7 @@ class UpdateProductStock implements ShouldQueue
      */
     public function handle(): void
     {
+        // Decrement the stock of the product by the specified quantity
         Product::where('id', $this->productId)
             ->decrement('stock', $this->quantity);
     }

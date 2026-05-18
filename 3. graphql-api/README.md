@@ -57,8 +57,8 @@ Pada GraphQL, klien menentukan sendiri field yang dibutuhkan:
 ## Struktur Folder
 
 ```
-graphql-api/
-└── student-api/    ← GraphQL API CRUD data mahasiswa
+3. graphql-api/
+└── student-api/    ← GraphQL API CRUD data mahasiswa (Laravel 10 + Lighthouse)
 ```
 
 ---
@@ -67,4 +67,4 @@ graphql-api/
 
 | Proyek | Deskripsi | README |
 |--------|-----------|--------|
-| **Student API** | GraphQL API CRUD untuk data mahasiswa menggunakan Lighthouse | [student-api/README.md](student-api/README.md) |
+| **Student API** | GraphQL API CRUD untuk data mahasiswa menggunakan Lighthouse dengan custom resolver | [student-api/README.md](student-api/README.md) |

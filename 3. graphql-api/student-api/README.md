@@ -8,8 +8,10 @@ Contoh implementasi **GraphQL API** menggunakan arsitektur **monolitik** dengan 
 - [Perbedaan GraphQL vs REST API](#perbedaan-graphql-vs-rest-api)
 - [Teknologi yang Digunakan](#teknologi-yang-digunakan)
 - [Konfigurasi Environment](#konfigurasi-environment)
+- [Struktur Folder](#struktur-folder)
 - [Struktur Database](#struktur-database)
 - [GraphQL Schema](#graphql-schema)
+- [Arsitektur Custom Resolver](#arsitektur-custom-resolver)
 - [Operasi GraphQL](#operasi-graphql)
 - [Cara Menjalankan](#cara-menjalankan)
 
@@ -63,6 +65,31 @@ Contoh implementasi **GraphQL API** menggunakan arsitektur **monolitik** dengan 
 
 ---
 
+## Struktur Folder
+
+```
+student-api/
+├── app/
+│   ├── GraphQL/
+│   │   ├── Mutations/
+│   │   │   └── StudentMutations.php   ← Resolver untuk createStudent, updateStudent, deleteStudent
+│   │   └── Queries/
+│   │       └── StudentQueries.php     ← Resolver untuk students dan student(id)
+│   └── Models/
+│       └── Student.php                ← Eloquent model
+├── database/
+│   ├── factories/
+│   │   └── StudentFactory.php         ← Factory untuk data dummy
+│   ├── migrations/
+│   │   └── ..._create_students_table.php
+│   └── seeders/
+│       └── StudentSeeder.php
+└── graphql/
+    └── schema.graphql                 ← Definisi schema GraphQL
+```
+
+---
+
 ## Struktur Database
 
 ### Tabel `students`
@@ -86,9 +113,11 @@ Saat migrasi dijalankan dengan `--seed`, akan dibuat **10 mahasiswa dummy** seca
 
 ## GraphQL Schema
 
-File schema berada di `graphql/schema.graphql`. Schema mendefinisikan struktur data, query, dan mutation yang tersedia.
+File schema berada di `graphql/schema.graphql`. Schema mendefinisikan struktur data, query, dan mutation yang tersedia, serta mengarahkan setiap operasi ke class resolver yang sesuai menggunakan directive `@field`.
 
 ```graphql
+scalar DateTime @scalar(class: "Nuwave\\Lighthouse\\Schema\\Types\\Scalars\\DateTime")
+
 type Student {
   id: ID!
   nim: String!
@@ -101,8 +130,8 @@ type Student {
 }
 
 type Query {
-  students: [Student!]!
-  student(id: ID!): Student
+  students: [Student!]! @field(resolver: "App\\GraphQL\\Queries\\StudentQueries@all")
+  student(id: ID!): Student @field(resolver: "App\\GraphQL\\Queries\\StudentQueries@find")
 }
 
 input CreateStudentInput {
@@ -123,11 +152,56 @@ input UpdateStudentInput {
 }
 
 type Mutation {
-  createStudent(input: CreateStudentInput!): Student
-  updateStudent(input: UpdateStudentInput!): Student
-  deleteStudent(id: ID!): Student
+  createStudent(input: CreateStudentInput!): Student @field(resolver: "App\\GraphQL\\Mutations\\StudentMutations@create")
+  updateStudent(input: UpdateStudentInput!): Student @field(resolver: "App\\GraphQL\\Mutations\\StudentMutations@update")
+  deleteStudent(id: ID!): Student @field(resolver: "App\\GraphQL\\Mutations\\StudentMutations@delete")
 }
 ```
+
+---
+
+## Arsitektur Custom Resolver
+
+Proyek ini menggunakan **custom resolver class** alih-alih directive bawaan Lighthouse (seperti `@all`, `@find`, `@create`, dll.). Setiap operasi diarahkan ke method tertentu di dalam class resolver menggunakan directive `@field`.
+
+### Query Resolver — `app/GraphQL/Queries/StudentQueries.php`
+
+```php
+public function all($root, array $args)
+{
+    return Student::all();
+}
+
+public function find($root, array $args)
+{
+    return Student::find($args['id']);
+}
+```
+
+### Mutation Resolver — `app/GraphQL/Mutations/StudentMutations.php`
+
+```php
+public function create($root, array $args)
+{
+    return Student::create($args['input']);
+}
+
+public function update($root, array $args)
+{
+    $student = Student::findOrFail($args['input']['id']);
+    $student->update($args['input']);
+    return $student;
+}
+
+public function delete($root, array $args)
+{
+    $student = Student::findOrFail($args['id']);
+    $student->delete();
+    return $student;
+}
+```
+
+> **Catatan:** Pendekatan custom resolver memberikan fleksibilitas lebih untuk menambahkan logika bisnis dibandingkan directive bawaan Lighthouse.
 
 ---
 
@@ -209,16 +283,6 @@ curl -X POST http://127.0.0.1:8000/graphql \
 ---
 
 ### Mutation — Tambah Mahasiswa Baru
-
-```bash
-curl -X POST http://127.0.0.1:8000/graphql \
-  -H "Content-Type: application/json" \
-  -d '{
-    "query": "mutation { createStudent(input: { nim: \"12345678\", name: \"John Doe\", email: \"john@example.com\", address: \"Jl. Contoh No. 1\", phone: \"081234567890\" }) { id nim name email address phone } }"
-  }'
-```
-
-Atau menggunakan **variabel GraphQL** (cara yang lebih bersih):
 
 ```bash
 curl -X POST http://127.0.0.1:8000/graphql \
@@ -323,13 +387,28 @@ curl -X POST http://127.0.0.1:8000/graphql \
 composer install
 ```
 
-**2. Jalankan migrasi dan seeder**
+**2. Salin file environment**
+
+```bash
+cp .env.example .env
+php artisan key:generate
+```
+
+**3. Sesuaikan konfigurasi database di `.env`**
+
+```env
+DB_DATABASE=student-gql-api
+DB_USERNAME=root
+DB_PASSWORD=root
+```
+
+**4. Jalankan migrasi dan seeder**
 
 ```bash
 php artisan migrate:refresh --seed
 ```
 
-**3. Jalankan server**
+**5. Jalankan server**
 
 ```bash
 php artisan serve
